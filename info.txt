@@ -1,0 +1,19 @@
+
+
+
+徐术挺-漫思录
+insight.thinkmeta.site
+
+
+
+
+ npm i
+ npm version
+ npm -v
+ npx quartz create
+ npx quartz plugin install --from-config
+ npx quartz build --serve
+
+
+ 
+

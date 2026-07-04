@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spiral SVG with Arrows</title>
+    <style>
+        /*svg {
+            border: 1px solid black;
+        }*/
+    </style>
+</head>
+<body>
+    <svg id="spiral" width="800" height="800" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+            <marker id="arrow-black" markerWidth="10" markerHeight="10" refX="5" refY="5"
+                    orient="auto-start-reverse" markerUnits="strokeWidth">
+                <path d="M 0 0 L 10 5 L 0 10 z" fill="black"/>
+            </marker>
+            <marker id="arrow-blue" markerWidth="5" markerHeight="5" refX="2.5" refY="2.5"
+                    orient="auto-start-reverse" markerUnits="strokeWidth">
+                <path d="M 0 0 L 5 2.5 L 0 5 z" fill="blue"/>
+            </marker>
+        </defs>
+    </svg>
+    <script>
+        function createSpiralPath(cx, cy, turns, spacing) {
+            let pathData = `M ${cx},${cy}`;
+            const points = 100; // Number of points per turn
+
+            for (let i = 0; i < turns * points; i++) {
+                const angle = i * (2 * Math.PI / points); // Positive angle for clockwise
+                const radius = spacing * angle / (2 * Math.PI);
+                const x = cx + radius * Math.cos(angle);
+                const y = cy + radius * Math.sin(angle);
+                pathData += ` L ${x},${y}`;
+            }
+
+            return pathData;
+        }
+
+        function createCurvedLine(cx, cy, length) {
+            // Create a random curved line path
+            const xEnd = cx + length;
+            let pathData = `M ${cx},${cy}`;
+            
+            for (let i = 0; i <= length; i += length / 10) {
+                const x = cx + i;
+                const y = cy - i + (Math.random() - 0.5) * 50; // Create a random offset for y, extending upwards
+                pathData += ` L ${x},${y}`;
+            }
+
+            return pathData;
+        }
+
+        const svg = document.getElementById('spiral');
+        const spiralPathData = createSpiralPath(400, 400, 20, 10);
+        const curvedLinePathData = createCurvedLine(400, 400, 200); // Shorter length for the curved line
+
+        const spiralPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        spiralPath.setAttribute('d', spiralPathData);
+        spiralPath.setAttribute('stroke', 'black');
+        spiralPath.setAttribute('fill', 'none');
+        spiralPath.setAttribute('marker-end', 'url(#arrow-black)'); // Add black arrow to the end
+
+        const curvedLinePath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        curvedLinePath.setAttribute('d', curvedLinePathData);
+        curvedLinePath.setAttribute('stroke', 'blue');
+        curvedLinePath.setAttribute('fill', 'none');
+        curvedLinePath.setAttribute('stroke-width', '2'); // Set the line to be thinner
+        curvedLinePath.setAttribute('marker-end', 'url(#arrow-blue)'); // Add blue arrow to the end
+
+        svg.appendChild(spiralPath);
+        svg.appendChild(curvedLinePath);
+    </script>
+</body>
+</html>
