@@ -1,0 +1,67 @@
+
+
+
+ipa-local.thinkmeta.site
+
+
+
+
+sudo docker rm -f freeipa-server 2>/dev/null
+sudo rm -rf /data/docker-space/ipa-data/*
+docker run -d  \
+  --privileged \
+  --cgroupns=host \
+  -v /sys/fs/cgroup:/sys/fs/cgroup:rw \
+  -v /proc/meminfo:/proc/meminfo:ro \
+  --name freeipa-server \
+  --hostname ipa-local.thinkmeta.site \
+  --restart unless-stopped \
+  --sysctl net.ipv6.conf.all.disable_ipv6=0 \
+  --add-host ipa-local.thinkmeta.site:192.168.3.90 \
+  -e IPA_SERVER_IP=192.168.3.90 \
+  -v /data/docker-space/ipa-data:/data \
+  -p 192.168.3.90:53:53/tcp \
+  -p 192.168.3.90:53:53/udp \
+  -p 80:80/tcp \
+  -p 443:443/tcp \
+  -p 389:389/tcp \
+  -p 636:636/tcp \
+  -p 88:88/tcp \
+  -p 88:88/udp \
+  -p 464:464/tcp \
+  -p 464:464/udp \
+  -p 123:123/udp \
+  -e PASSWORD="972702550" \
+  freeipa/freeipa-server:almalinux-10-4.13.1 \
+  ipa-server-install \
+  -U \
+  --domain=thinkmeta.site \
+  --realm=THINKMETA.SITE \
+  --hostname=ipa-local.thinkmeta.site \
+  --ip-address=192.168.3.90 \
+  --setup-dns \
+  --forwarder=1.1.1.1 \
+  --no-ntp \
+  --skip-mem-check \
+  --allow-zone-overlap
+
+
+
+
+
+
+sudo hostnamectl set-hostname dev.thinkmeta.site
+
+
+echo "127.0.0.1 dev.thinkmeta.site dev" | sudo tee -a /etc/hosts
+
+# 查看或修改 /etc/resolv.conf
+echo "nameserver 192.168.3.90" | sudo tee /etc/resolv.conf
+
+
+sudo ipa-client-install \
+  --domain=thinkmeta.site \
+  --server=ipa-local.thinkmeta.site \
+  --realm=THINKMETA.SITE \
+  --mkhomedir
+
