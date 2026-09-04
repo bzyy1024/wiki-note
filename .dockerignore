@@ -1,0 +1,13 @@
+node_modules
+public
+.quartz-cache
+.quartz
+.obsidian
+private/
+.github
+prof
+*.tsbuildinfo
+
+# 保留 .git：created-modified-date 插件依赖 git 历史获取文章创建/修改时间。
+# 若不需要 git 时间（可节省约 180MB 构建上下文），取消下一行注释。
+# .git

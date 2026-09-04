@@ -15,4 +15,7 @@ FROM node:22-slim
 WORKDIR /usr/src/app
 COPY --from=builder /usr/src/app/ /usr/src/app/
 COPY . .
-CMD ["npx", "quartz", "build", "--serve"]
+
+# --serve 会先构建 public/ 再用自带 serve-handler 监听 8080
+EXPOSE 8080
+CMD ["npx", "quartz", "build", "--serve", "--port", "8080", "--wsPort", "3001"]

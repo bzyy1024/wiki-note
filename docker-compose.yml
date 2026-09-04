@@ -1,0 +1,27 @@
+services:
+  wiki:
+    # 与本地一致：npx quartz build --serve 监听 8080，端口转发交给宿主机/网关
+    build:
+      context: .
+    image: wiki-note:latest
+    container_name: wiki-note
+    restart: unless-stopped
+    labels:
+      # 镜像为本地构建（非 registry 拉取），交由 watchtower 管理只会反复 pull 失败
+      com.centurylinklabs.watchtower.enable: "false"
+    ports:
+      - "8826:8080"
+    volumes:
+      # 挂载后改文章只需 git pull，容器内会自动重建，无需重新 build 镜像
+      - ./content:/usr/src/app/content
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "node -e \"require('node:http').get('http://127.0.0.1:8080/', r => process.exit(r.statusCode < 400 ? 0 : 1)).on('error', () => process.exit(1))\"",
+        ]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      # 首次启动要先构建全站（约 980 篇），留足时间
+      start_period: 240s
