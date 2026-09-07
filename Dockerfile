@@ -1,25 +1,28 @@
-FROM node:22-slim AS builder
+# syntax=docker/dockerfile:1
 
-# install git to install plugins
+# ---------- 阶段 1：安装依赖（层缓存稳定，仅依赖/quartz 框架变更时重建） ----------
+FROM node:22-slim AS deps
+# git 供 @quartz-community/created-modified-date 读取文章创建/修改时间
 RUN apt-get update && apt-get install -y git && rm -rf /var/lib/apt/lists/*
-
 WORKDIR /usr/src/app
-COPY package.json .
-COPY package-lock.json* .
-COPY .npmrc* .
+COPY package.json package-lock.json* .npmrc* ./
 COPY quartz/ ./quartz/
-COPY quartz.lock.json* .
+COPY quartz.lock.json* ./
 RUN npm install; npx quartz plugin install
 
+# ---------- 阶段 2：镜像构建期内完成全站构建（bake），产物生成 public/ ----------
+FROM deps AS builder
+WORKDIR /usr/src/app
+# content 与 .git 需进构建上下文：content 是站点源，.git 供 created-modified-date 读历史
+COPY . .
+# 2 核小内存加固：限制 V8 堆 + 固定并发，防止 docker build 期间 OOM / CPU 抢占
+ENV NODE_OPTIONS=--max-old-space-size=1536
+RUN npx quartz build --output public --concurrency 2
+
+# ---------- 阶段 3：运行时纯静态服务，启动即秒级可用，不再有任何构建 ----------
 FROM node:22-slim
 WORKDIR /usr/src/app
-COPY --from=builder /usr/src/app/ /usr/src/app/
-COPY . .
-
-# 2 核小内存服务器加固：
-# 1) 限制 V8 堆内存，防止全量构建吃光内存触发 OOM（可按服务器内存调 1024~2048）
-# 2) 构建并发固定为 2，避免 worker 线程抢占 CPU
-ENV NODE_OPTIONS=--max-old-space-size=1588
-# --serve 会先构建 public/ 再用自带 serve-handler 监听 8080
+COPY --from=builder /usr/src/app/public ./public
+COPY server.mjs .
 EXPOSE 8080
-CMD ["npx", "quartz", "build", "--serve", "--port", "8080", "--wsPort", "3001", "--concurrency", "2"]
+CMD ["node", "server.mjs"]
