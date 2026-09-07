@@ -17,3 +17,6 @@ insight.thinkmeta.site
 
  
 
+git pull && docker compose up -d --build
+
+
