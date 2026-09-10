@@ -1,5 +1,6 @@
 import { StaticResources } from "../util/resources"
 import { BuildCtx } from "../util/ctx"
+import { rewriteExternalAssets } from "../util/selfHostedAssets"
 
 export function getStaticResourcesFromPlugins(ctx: BuildCtx) {
   const staticResources: StaticResources = {
@@ -37,6 +38,18 @@ export function getStaticResourcesFromPlugins(ctx: BuildCtx) {
       `,
     })
   }
+
+  // 插件默认可能从公共 CDN 加载前端资源（例如 KaTeX），这里统一改写为本站
+  // `static/vendor/**` 的本地副本，保证浏览器只向本站发起请求。
+  staticResources.css = staticResources.css.map((resource) => ({
+    ...resource,
+    content: rewriteExternalAssets(resource.content),
+  }))
+  staticResources.js = staticResources.js.map((resource) =>
+    resource.contentType === "external"
+      ? { ...resource, src: rewriteExternalAssets(resource.src) }
+      : { ...resource, script: rewriteExternalAssets(resource.script) },
+  )
 
   return staticResources
 }

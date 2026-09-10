@@ -12,6 +12,7 @@ import popoverStyle from "../../components/styles/popover.scss"
 import { BuildCtx } from "../../util/ctx"
 import { QuartzComponent } from "../../components/types"
 import { normalizeResource } from "../../util/resources"
+import { rewriteExternalAssets } from "../../util/selfHostedAssets"
 import { componentRegistry } from "../../components/registry"
 import {
   googleFontHref,
@@ -327,6 +328,15 @@ export const ComponentResources: QuartzEmitterPlugin = () => {
       // as the "nav" event gets triggered here and we should make sure
       // that everyone else had the chance to register a listener for it
       addGlobalPageResources(ctx, componentResources)
+
+      // 组件脚本里可能硬编码了第三方 CDN 地址（如 graph 的 d3/Pixi、
+      // obsidian-flavored-markdown 的 mermaid），统一改写为本站静态资源。
+      componentResources.beforeDOMLoaded = componentResources.beforeDOMLoaded.map(
+        rewriteExternalAssets,
+      )
+      componentResources.afterDOMLoaded = componentResources.afterDOMLoaded.map(
+        rewriteExternalAssets,
+      )
 
       const useHashing = !ctx.argv.serve
 

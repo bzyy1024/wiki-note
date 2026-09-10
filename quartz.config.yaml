@@ -4,8 +4,10 @@ configuration:
   pageTitleSuffix: ""
   enableSPA: true
   enablePopovers: true
-  analytics:
-    provider: plausible
+  # 统计脚本会向第三方站点（plausible.io）发起请求，为做到「只在本站请求前端资源」默认关闭。
+  # 如需启用，取消下面注释即可（注意其数据必然发往第三方，无法完全本地化）。
+  # analytics:
+  #   provider: plausible
   locale: zh-CN
   baseUrl: blog.thinkmeta.site
   ignorePatterns:
@@ -13,8 +15,10 @@ configuration:
     - templates
     - .obsidian
   theme:
-    fontOrigin: googleFonts
-    cdnCaching: true
+    # 字体由 @quartz-community/quartz-fonts 插件的 selfHosted 模式下载到本站
+    # （见下方插件配置），核心这里不再直连 Google Fonts。
+    fontOrigin: local
+    cdnCaching: false
     typography:
       header: Schibsted Grotesk
       body: Source Sans Pro
@@ -100,6 +104,13 @@ plugins:
     order: 92
   - source: "@quartz-community/quartz-fonts"
     enabled: true
+    options:
+      # selfHosted: 构建时下载字体并写入 static/fonts，页面只引用本站资源
+      fontOrigin: selfHosted
+      useThemeFonts: false
+      header: Schibsted Grotesk
+      body: Source Sans Pro
+      code: IBM Plex Mono
   - source: "@quartz-community/remove-draft"
     enabled: true
   - source: "@quartz-community/explicit-publish"
