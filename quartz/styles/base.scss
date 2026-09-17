@@ -7,8 +7,11 @@
 html {
   scroll-behavior: smooth;
   text-size-adjust: none;
-  overflow-x: hidden;
-  width: 100vw;
+  // 用 clip 而非 hidden：既能裁掉横向溢出，又不会让 html 变成滚动容器，
+  // 避免 iOS Safari 出现「页面卡死、不能上下滑动」的问题。
+  overflow-x: clip;
+  // 移除 width:100vw。100vw 比实际内容视口宽，移动端地址栏收起/展开会反复触发
+  // 横向重排，导致页面闪动跳动。html 作为块级元素本就占满宽度，无需显式设置。
 
   @media all and ($mobile) {
     scroll-padding-top: 4rem;

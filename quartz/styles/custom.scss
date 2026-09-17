@@ -1,3 +1,13 @@
 @use "./variables.scss" as *;
 
 // put your custom CSS here!
+
+// 移动端关闭「关系图谱」：graph 组件每页都会常驻一个 PixiJS/WebGL 画布，
+// 并用 requestAnimationFrame 无限循环渲染（永不停止），在手机上持续占用主线程/显存，
+// 造成页面卡顿；点开「全局图谱」时还会对全库 6000+ 节点跑力导向模拟，直接卡死。
+// 移动端隐藏 .graph（本地图谱 + 全局图谱按钮一并隐藏）。
+@media all and ($mobile) {
+  .graph {
+    display: none;
+  }
+}
