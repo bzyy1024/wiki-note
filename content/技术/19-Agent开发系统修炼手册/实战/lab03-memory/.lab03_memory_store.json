@@ -1,0 +1,13 @@
+{
+  "user": {
+    "lang": "Go",
+    "style": "反水字数、要深度答案"
+  },
+  "projects": {
+    "agent-book": {
+      "no_sqlite": true,
+      "deploy": "1Panel",
+      "api_style": "gRPC"
+    }
+  }
+}
