@@ -1,7 +1,6 @@
 import { h } from "preact"
 import { createDbWorker } from "sql.js-httpvfs"
 import type {
-  QuartzComponent,
   QuartzComponentConstructor,
   QuartzComponentProps,
 } from "@quartz-community/types"
@@ -10,7 +9,7 @@ import type {
 // global scope) can reach the module-scoped import.
 ;(globalThis as any).__createDbWorker = createDbWorker
 
-export const Search: QuartzComponent = (props: QuartzComponentProps) => {
+function SearchComponent(_props: QuartzComponentProps) {
   return h("div", { class: "search" }, [
     h(
       "button",
@@ -66,7 +65,7 @@ export const Search: QuartzComponent = (props: QuartzComponentProps) => {
   ])
 }
 
-Search.css = `
+SearchComponent.css = `
 .search {
   min-width: fit-content;
   max-width: 14rem;
@@ -320,7 +319,13 @@ function initSearch() {
 
 ;(globalThis as any).__initSqliteSearch = initSearch
 
-// Bootstrap: just invoke the real (bundled) implementation.
-Search.afterDOMLoaded = () => `window.__initSqliteSearch && window.__initSqliteSearch();`
+// After the page DOM is ready, wire up the browser-side search UI.
+SearchComponent.afterDOMLoaded = () => `window.__initSqliteSearch && window.__initSqliteSearch();`
 
-export default Search as QuartzComponentConstructor
+// Quartz expects a constructor: (options) => QuartzComponent.
+// The loader calls this with the plugin's YAML options and uses the returned
+// component (body function) for rendering.
+const Search: QuartzComponentConstructor = () => SearchComponent
+
+export default Search
+export { Search }
