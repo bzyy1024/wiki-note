@@ -134,16 +134,17 @@ plugins:
       display: all
   - source: "@quartz-community/alias-redirects"
     enabled: true
+  # Replaced by the local sqlite-index plugin below (which also emits sitemap/rss).
   - source: "@quartz-community/content-index"
-    enabled: true
-    options:
-      enableSiteMap: true
-      enableRSS: true
-  # Local plugin: slims contentIndex.json (drops full text) and generates
-  # static/contentIndex.sqlite (FTS5) for on-demand, range-request search.
+    enabled: false
+  # Local plugin: slims contentIndex.json (drops full text), generates
+  # static/contentIndex.sqlite for on-demand search, and emits sitemap + RSS.
   - source: "./quartz/plugins/sqlite-index"
     enabled: true
     order: 60
+    options:
+      enableSiteMap: true
+      enableRSS: true
   - source: "@quartz-community/favicon"
     enabled: true
   - source: "@quartz-community/og-image"
