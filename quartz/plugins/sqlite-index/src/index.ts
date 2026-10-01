@@ -16,6 +16,20 @@ interface SqliteIndexOptions {
   rssLastFewNotesText?: string | ((count: number) => string)
 }
 
+// Word segmenter used at build time to tokenize content into space-separated
+// word units (CJK-aware). The browser side uses the same segmenter so a query
+// token only matches an independent word, not a substring inside another word.
+const segmenter = new Intl.Segmenter("zh", { granularity: "word" })
+
+function segment(text: string): string {
+  const parts: string[] = []
+  for (const { segment, isWordLike } of segmenter.segment(text)) {
+    if (isWordLike) parts.push(segment)
+  }
+  // Pad with spaces so LIKE '% word %' reliably matches word boundaries.
+  return " " + parts.join(" ") + " "
+}
+
 interface Entry {
   slug: string
   filePath: string
@@ -197,17 +211,18 @@ export const SqliteIndex: QuartzEmitterPlugin = (opts?: SqliteIndexOptions) => {
            title TEXT,
            tags TEXT,
            content TEXT,
+           seg TEXT,
            date TEXT,
            description TEXT
          );`,
       )
       const ins = db.prepare(
-        "INSERT INTO pages (id, slug, title, tags, content, date, description) VALUES (?, ?, ?, ?, ?, ?, ?)",
+        "INSERT INTO pages (id, slug, title, tags, content, seg, date, description) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
       )
       db.run("BEGIN TRANSACTION")
       let id = 1
       for (const e of entries) {
-        ins.run([id, e.slug, e.title, e.tags.join(","), e.content, e.date, e.description])
+        ins.run([id, e.slug, e.title, e.tags.join(","), e.content, segment(e.content), e.date, e.description])
         id++
       }
       db.run("COMMIT")

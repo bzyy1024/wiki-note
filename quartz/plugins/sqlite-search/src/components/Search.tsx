@@ -238,12 +238,11 @@ function initSearch() {
   const escapeHtml = (s: string) =>
     s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!)
 
-  function makeSnippet(content: string, tokens: string[]): string {
+  function makeSnippet(content: string, words: string[]): string {
     const lower = content.toLowerCase()
     let idx = -1
-    for (const tk of tokens) {
-      const t = tk.slice(1, -1).toLowerCase()
-      const p = lower.indexOf(t)
+    for (const w of words) {
+      const p = lower.indexOf(w.toLowerCase())
       if (p >= 0 && (idx < 0 || p < idx)) idx = p
     }
     if (idx < 0) idx = 0
@@ -253,11 +252,10 @@ function initSearch() {
     if (start > 0) piece = "…" + piece
     if (end < content.length) piece = piece + "…"
     let esc = escapeHtml(piece)
-    for (const tk of tokens) {
-      const t = tk.slice(1, -1)
-      if (!t) continue
+    for (const w of words) {
+      if (!w) continue
       try {
-        const re = new RegExp(t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "gi")
+        const re = new RegExp(w.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "gi")
         esc = esc.replace(re, (m) => "<mark>" + m + "</mark>")
       } catch {
         /* ignore invalid regex */
@@ -269,22 +267,28 @@ function initSearch() {
   async function runSearch(q: string) {
     try {
       const db = await getDb()
-      // Build LIKE patterns; escape LIKE wildcards (% _), keep CJK intact.
-      const tokens = q
-        .split(/\s+/)
-        .filter(Boolean)
-        .map((t) => "%" + t.replace(/[%~_]/g, (c) => "\\" + c) + "%")
-      if (!tokens.length) {
+      // Tokenize the query with the same word segmenter used at build time, so a
+      // query word matches an independent word in `seg`, not a substring.
+      const seg = new Intl.Segmenter("zh", { granularity: "word" })
+      const words: string[] = []
+      for (const { segment, isWordLike } of seg.segment(q)) {
+        const w = segment.trim()
+        if (isWordLike && w) words.push(w)
+      }
+      if (!words.length) {
         results!.innerHTML = ""
         return
       }
-      const conds = tokens
-        .map(() => "(content LIKE ? ESCAPE '\\' OR title LIKE ? ESCAPE '\\')")
+      // `seg` is padded with spaces, so a leading/trailing space turns a LIKE
+      // into a word-boundary match (e.g. "% 程序 %" won't hit "程序员").
+      const patternFor = (w: string) => "% " + w.replace(/[%~_]/g, (c) => "\\" + c) + " %"
+      const conds = words
+        .map(() => "(seg LIKE ? ESCAPE '\\' OR title LIKE ? ESCAPE '\\')")
         .join(" AND ")
       const params: string[] = []
-      tokens.forEach((t) => {
-        params.push(t)
-        params.push(t)
+      words.forEach((w) => {
+        const p = patternFor(w)
+        params.push(p, p)
       })
       const sql = "SELECT slug, title, content FROM pages WHERE " + conds + " LIMIT 60"
       const rows: any[] = await (db as any).query(sql, ...params)
@@ -296,7 +300,7 @@ function initSearch() {
       let html = ""
       for (let i = 0; i < max; i++) {
         const r = rows[i]
-        const snip = makeSnippet(r.content || "", tokens)
+        const snip = makeSnippet(r.content || "", words)
         const title = escapeHtml(r.title || r.slug)
         html +=
           '<a class="search-result" href="' +
