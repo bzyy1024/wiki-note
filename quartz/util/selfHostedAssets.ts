@@ -42,7 +42,7 @@ export function rewriteExternalAssetUrl(url: string): string {
 
 /** 把文本中出现的所有外部资源 URL 批量改写为本站静态路径。 */
 export function rewriteExternalAssets(text: string): string {
-  if (!text) {
+  if (!text || typeof text !== "string") {
     return text
   }
   return text.replace(externalAssetPattern, (match) => SELF_HOSTED_ASSETS[match] ?? match)

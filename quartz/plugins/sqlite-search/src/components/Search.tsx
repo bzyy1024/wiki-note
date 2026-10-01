@@ -320,7 +320,8 @@ function initSearch() {
 ;(globalThis as any).__initSqliteSearch = initSearch
 
 // After the page DOM is ready, wire up the browser-side search UI.
-SearchComponent.afterDOMLoaded = () => `window.__initSqliteSearch && window.__initSqliteSearch();`
+// NOTE: afterDOMLoaded must be a string (StringResource), not a function.
+SearchComponent.afterDOMLoaded = `window.__initSqliteSearch && window.__initSqliteSearch();`
 
 // Quartz expects a constructor: (options) => QuartzComponent.
 // The loader calls this with the plugin's YAML options and uses the returned
