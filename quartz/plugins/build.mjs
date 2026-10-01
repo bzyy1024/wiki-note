@@ -1,7 +1,7 @@
 // Build script for the local Quartz plugins (sqlite-index + sqlite-search).
 // Run with: node quartz/plugins/build.mjs
 import { build } from "esbuild"
-import { copyFileSync, mkdirSync, cpSync, rmSync } from "fs"
+import { copyFileSync, mkdirSync, cpSync, rmSync, symlinkSync, existsSync } from "fs"
 import path from "path"
 import { fileURLToPath } from "url"
 
@@ -41,15 +41,29 @@ async function main() {
   copyFileSync(path.join(httpvfs, "sqlite.worker.js"), path.join(staticDir, "sqlite.worker.js"))
   copyFileSync(path.join(httpvfs, "sql-wasm.wasm"), path.join(staticDir, "sql-wasm.wasm"))
 
-  // --- Copy built plugins into .quartz/plugins so the loader doesn't need to
-  //     symlink (Windows symlinks require admin/developer mode). The loader
-  //     skips symlinking when the target already exists. ---
+  // --- Link built plugins into .quartz/plugins so the Quartz loader skips its
+  //     own symlink step (which needs admin/Developer-Mode on Windows and fails
+  //     with EPERM). We create a *junction* (Windows) / normal symlink (Linux),
+  //     which the loader recognizes as "already linked" and leaves alone.
+  //     The loader only re-symlinks when the target is NOT already a symlink to
+  //     the right place, so a junction satisfies it on every platform. ---
   const quartzPlugins = path.join(root, "..", "..", ".quartz", "plugins")
   mkdirSync(quartzPlugins, { recursive: true })
   for (const name of ["sqlite-index", "sqlite-search"]) {
     const dest = path.join(quartzPlugins, name)
-    rmSync(dest, { recursive: true, force: true })
-    cpSync(path.join(root, name), dest, { recursive: true })
+    const src = path.join(root, name)
+    if (existsSync(dest)) rmSync(dest, { recursive: true, force: true })
+    try {
+      // junction: works on Windows without admin; ignored-type -> normal symlink on Linux
+      symlinkSync(src, dest, "junction")
+    } catch {
+      try {
+        symlinkSync(src, dest, "dir")
+      } catch {
+        // absolute last resort (loader will re-symlink, but keeps a usable copy)
+        cpSync(src, dest, { recursive: true })
+      }
+    }
   }
 
   console.log("Built sqlite-index + sqlite-search, copied worker/wasm to quartz/static, and installed into .quartz/plugins.")
