@@ -164,11 +164,9 @@ plugins:
     layout:
       position: left
       priority: 50
+  # 右侧小图谱节点太多、看不清，暂时禁用。后续如需全屏全局图谱再单独加一个页面。
   - source: "@quartz-community/graph"
-    enabled: true
-    layout:
-      position: right
-      priority: 10
+    enabled: false
   - source: "./quartz/plugins/sqlite-search"
     enabled: true
     layout:
