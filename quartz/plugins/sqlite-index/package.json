@@ -1,0 +1,15 @@
+{
+  "name": "sqlite-index",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Quartz emitter: slim contentIndex.json and build an on-demand FTS5 SQLite index.",
+  "quartz": {
+    "name": "sqlite-index",
+    "displayName": "SQLite Index",
+    "category": "emitter",
+    "version": "1.0.0",
+    "quartzVersion": ">=5.0.0",
+    "defaultOrder": 60,
+    "defaultEnabled": true
+  }
+}

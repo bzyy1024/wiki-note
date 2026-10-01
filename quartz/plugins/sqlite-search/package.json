@@ -1,0 +1,29 @@
+{
+  "name": "sqlite-search",
+  "version": "1.0.0",
+  "type": "module",
+  "private": true,
+  "description": "Quartz search component backed by an on-demand SQLite (FTS5) index over HTTP range requests.",
+  "peerDependencies": {
+    "preact": "^10.0.0"
+  },
+  "quartz": {
+    "name": "sqlite-search",
+    "displayName": "SQLite Search",
+    "category": "component",
+    "version": "1.0.0",
+    "quartzVersion": ">=5.0.0",
+    "defaultOrder": 50,
+    "defaultEnabled": true,
+    "defaultOptions": {
+      "placeholder": "Search"
+    },
+    "components": {
+      "Search": {
+        "displayName": "Search",
+        "defaultPosition": "left",
+        "defaultPriority": 20
+      }
+    }
+  }
+}

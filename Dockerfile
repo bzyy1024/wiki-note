@@ -17,7 +17,8 @@ WORKDIR /usr/src/app
 COPY . .
 # 2 核小内存加固：限制 V8 堆 + 固定并发，防止 docker build 期间 OOM / CPU 抢占
 ENV NODE_OPTIONS=--max-old-space-size=1536
-RUN npx quartz build --output public --concurrency 2
+# 先构建本地插件（生成 dist 与 static 下的 worker/wasm），再做全站构建
+RUN node quartz/plugins/build.mjs && npx quartz build --output public --concurrency 2
 
 # ---------- 阶段 3：运行时纯静态服务，启动即秒级可用，不再有任何构建 ----------
 FROM node:22-slim

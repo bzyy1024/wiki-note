@@ -5,6 +5,7 @@
 //   其他静态资源按文件直接返回；找不到时返回 404.html（若有）
 import { createServer } from "node:http"
 import { promises as fs } from "node:fs"
+import { createReadStream } from "node:fs"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
 
@@ -40,6 +41,8 @@ const MIME = {
   ".epub": "application/epub+zip",
   ".zip": "application/zip",
   ".wasm": "application/wasm",
+  ".sqlite": "application/octet-stream",
+  ".db": "application/octet-stream",
 }
 
 async function statOrNull(abs) {
@@ -95,7 +98,7 @@ function absSafe(rel) {
   return abs
 }
 
-async function sendFile(res, rel, status, headOnly) {
+async function sendFile(res, rel, status, headOnly, req) {
   const abs = absSafe(rel)
   if (!abs) {
     res.writeHead(403).end("Forbidden")
@@ -103,21 +106,76 @@ async function sendFile(res, rel, status, headOnly) {
   }
   const ext = path.extname(abs).toLowerCase()
   const htmlLike = ext === ".html" || ext === ""
-  res.writeHead(status, {
-    "Content-Type": MIME[ext] || "application/octet-stream",
+  const contentType = MIME[ext] || "application/octet-stream"
+
+  let stat
+  try {
+    stat = await fs.stat(abs)
+  } catch {
+    res.writeHead(404).end("Not Found")
+    return
+  }
+  const total = stat.size
+
+  const headers = {
+    "Content-Type": contentType,
+    // 关键：SQLite 索引通过 HTTP Range 分块按需读取，必须声明支持范围请求
+    "Accept-Ranges": "bytes",
     // 页面实时性优先；带 hash 的构建产物/图片可长缓存
     "Cache-Control": htmlLike ? "no-cache" : "public, max-age=604800",
-  })
+  }
+
+  // 解析 Range 请求（sql.js-httpvfs 读取 SQLite 页时发出）
+  const range = req?.headers?.range
+  let start = 0
+  let end = total - 1
+  let isRange = false
+  if (range && /^bytes=/.test(range)) {
+    const m = /bytes=(\d*)-(\d*)/.exec(range)
+    if (m) {
+      isRange = true
+      start = m[1] ? parseInt(m[1], 10) : 0
+      end = m[2] ? parseInt(m[2], 10) : total - 1
+      if (Number.isNaN(start) || Number.isNaN(end) || start > end || end >= total) {
+        res.writeHead(416, { "Content-Range": `bytes */${total}` })
+        res.end()
+        return
+      }
+    }
+  }
+
+  const len = end - start + 1
+  if (isRange) {
+    headers["Content-Range"] = `bytes ${start}-${end}/${total}`
+    headers["Content-Length"] = len
+    res.writeHead(206, headers)
+  } else {
+    headers["Content-Length"] = total
+    res.writeHead(status, headers)
+  }
+
   if (headOnly) {
     res.end()
     return
   }
-  try {
-    const data = await fs.readFile(abs)
-    res.end(data)
-  } catch {
-    res.writeHead(404).end("Not Found")
+
+  if (!isRange) {
+    try {
+      const data = await fs.readFile(abs)
+      res.end(data)
+    } catch {
+      res.writeHead(404).end("Not Found")
+    }
+    return
   }
+
+  // 仅流式返回请求的字节区间
+  const stream = createReadStream(abs, { start, end })
+  stream.on("error", () => {
+    if (!res.headersSent) res.writeHead(404).end("Not Found")
+    else res.destroy()
+  })
+  stream.pipe(res)
 }
 
 const server = createServer(async (req, res) => {
@@ -150,7 +208,7 @@ const server = createServer(async (req, res) => {
     const rel = pathname.replace(/^\/+/, "")
     const hit = await resolveTarget(rel)
     if (hit?.file) {
-      await sendFile(res, hit.file, 200, headOnly)
+      await sendFile(res, hit.file, 200, headOnly, req)
       return
     }
     if (hit?.redirect) {
@@ -160,7 +218,7 @@ const server = createServer(async (req, res) => {
 
     // 未命中 -> 404.html（Quartz 生成的错误页），否则纯 404
     if (await statOrNull(path.join(PUBLIC_DIR, "404.html"))) {
-      await sendFile(res, "404.html", 404, headOnly)
+      await sendFile(res, "404.html", 404, headOnly, req)
     } else {
       res.writeHead(404, { "Content-Type": "text/plain; charset=utf-8" }).end("Not Found")
     }

@@ -139,6 +139,11 @@ plugins:
     options:
       enableSiteMap: true
       enableRSS: true
+  # Local plugin: slims contentIndex.json (drops full text) and generates
+  # static/contentIndex.sqlite (FTS5) for on-demand, range-request search.
+  - source: "./quartz/plugins/sqlite-index"
+    enabled: true
+    order: 60
   - source: "@quartz-community/favicon"
     enabled: true
   - source: "@quartz-community/og-image"
@@ -163,7 +168,7 @@ plugins:
     layout:
       position: right
       priority: 10
-  - source: "@quartz-community/search"
+  - source: "./quartz/plugins/sqlite-search"
     enabled: true
     layout:
       position: left

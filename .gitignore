@@ -11,4 +11,8 @@ private/
 replit.nix
 .quartz/
 quartz/cli/tui/dist/
+# 本地插件由 quartz/plugins/build.mjs 在构建期生成，无需入库
+quartz/plugins/*/dist/
+quartz/static/sql-wasm.wasm
+quartz/static/sqlite.worker.js
 .turbo/
