@@ -20,6 +20,11 @@ description: 面向 Go、前端、Python 和 Docker 的个人主页，记录服�
 ## 我关注的方向
 目前我也在关注股票投资领域，乐于持续分享相关经验和观察。
 
+## 视频资源站
+我也搭建了一个视频站点，收录了一些我认为有价值的内容，欢迎试看：
+- 地址：[jellyfin.keeping.fun](https://jellyfin.keeping.fun)
+- 试看账号：`hello`　密码：`hello123`
+
 ## 联系方式
 - 主站：[www.thinkmeta.site](https://www.thinkmeta.site)
 - 博客：[blog.thinkmeta.site](https://blog.thinkmeta.site)
